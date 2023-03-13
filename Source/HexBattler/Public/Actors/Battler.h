@@ -59,33 +59,42 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly)
 	UStaticMeshComponent* StaticMeshComp;
 
+	/* Which team the unit is on*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Unit Info")
 	TEnumAsByte<ETeam> TeamName;
 
+	/* The number of tiles away that a battler can attack*/
 	UPROPERTY(EditDefaultsOnly, Category="Unit Info")
 	int TileRange = 5;
 
+	/* Current health*/
 	UPROPERTY(EditAnywhere, Category="Unit Info")
 	int Health = 30;
 
+	/* How many turns or time steps it takes for an attack to be performed*/
 	UPROPERTY(EditAnywhere, Category="Unit Info")
 	int TurnsPerAttack = 5;
 
+	/* How many turns or time steps it takes for a move to be performed*/
 	UPROPERTY(EditAnywhere, Category="Unit Info")
 	int TurnsPerMove = 2;
-
+	
 	UPROPERTY(EditAnywhere, Category="Unit Info")
 	int ActOnTurnNumber = 0;
 
+	/* How much damage can be done per attack, min (left) and max (right) */
 	UPROPERTY(EditDefaultsOnly, Category="Unit Info")
 	FIntVector2 DamageRange = FIntVector2(2,5);
 
+	/* Current tile location*/
 	UPROPERTY(EditDefaultsOnly, Category="Unit Info")
 	FIntVector2 TileLocation = FIntVector2(0,0);
 
+	/* The nearest enemy battler which is currently being targetted*/
 	UPROPERTY(VisibleAnywhere, Category="Unit Info")
 	ABattler* NearestEnemyBattler;
 
+	/* Whether the battler plans on attacking or moving next*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Unit Info")
 	TEnumAsByte<ETurnMode> TurnMode;
 

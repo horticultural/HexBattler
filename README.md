@@ -6,7 +6,7 @@ Clone the repo, right click the .uproject and generate visual studio project fil
 Open the .sln and compile from there.
 
 In the demo level you can press play and manouvre the camera to see the whole board.
-Though I like to go into Top View mode to see the birds eye view.
+Though I like to go into Top View mode, Lit (not wireframe) and then simulate play instead, to see the birds eye view.
 
 By clicking on the BP_HexGrid1 Actor in the outliner, you can set the Hex grid width, heigh, seed number and quantity of red and blue team units. Other details should not be changed.
 
