@@ -1,11 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "HexBattler/Public/Actors/HexGrid.h"
-
-#include "NetworkMessage.h"
 #include "HexBattler/Public/Actors/Battler.h"
 #include "HexBattler/Public/Actors/HexTile.h"
-#include "Perception/AISense_Team.h"
 
 
 
@@ -16,8 +13,6 @@ AHexGrid::AHexGrid()
 	PrimaryActorTick.bCanEverTick = true;
 
 }
-
-
 
 // Called when the game starts or when spawned
 void AHexGrid::BeginPlay()
@@ -51,7 +46,8 @@ void AHexGrid::CreateHexGrid(int Width, int Height)
 	if(!HexTileActor){return;}
 
 	HexGrid2DArray.Empty();
-	
+
+	//Loop to generate and spawn the hex grid system. TODO:change spawns to either a dynamic Shader or to instanced/procedural mesh so it's more optimised. having 1000 hexes spawn for a 100x100 grid is too much.
 	for (int i = 0; i < Width; i++)
 	{
 		HexGrid2DArray.Add(FHexGridY());
@@ -74,13 +70,10 @@ void AHexGrid::CreateHexGrid(int Width, int Height)
 
 FIntVector2 AHexGrid::SimplePathFind(FIntVector2 Origin, FIntVector2 Target)
 {
-	/*TArray<AHexTile*> HexTilePath;
-
-	GetNeighbourTiles(OriginX, OriginY);*/
-
 	int XDistance = Target.X - Origin.X;
 	int YDistance = Target.Y - Origin.Y;
 
+	//This is a really simple path finding system. Essentially just moves in the X direction first, then Y once it reaches the same X location.
 	if (XDistance > 0)
 	{
 		return FIntVector2(Origin.X+1, Origin.Y);
@@ -104,26 +97,6 @@ FIntVector2 AHexGrid::SimplePathFind(FIntVector2 Origin, FIntVector2 Target)
 	
 }
 
-// this is for A* path finding.
-void AHexGrid::GetNeighbourTiles(int TileX, int TileY)
-{
-	TArray<AHexTile*> NeighbourTiles;
-	
-	
-	NeighbourTiles.Add(HexGrid2DArray[TileX].Tiles[TileY-1]); // TODO make sure these fall within scope.
-	NeighbourTiles.Add(HexGrid2DArray[TileX].Tiles[TileY+1]);
-	NeighbourTiles.Add(HexGrid2DArray[TileX-1].Tiles[TileY]);
-	NeighbourTiles.Add(HexGrid2DArray[TileX+1].Tiles[TileY]);
-	NeighbourTiles.Add(HexGrid2DArray[TileX-1].Tiles[TileY+1]);
-	NeighbourTiles.Add(HexGrid2DArray[TileX-1].Tiles[TileY+1]);
-
-	for (AHexTile* HexTile : NeighbourTiles)
-	{
-		//if()
-	}
-}
-
-
 void AHexGrid::SpawnUnits(int UnitQuantity, ETeam Team)
 {
 	if(!BattlerClass){return;}
@@ -138,20 +111,11 @@ void AHexGrid::SpawnUnits(int UnitQuantity, ETeam Team)
 
 		FVector NewBattlerSpawnLocation = HexGrid2DArray[NewBattlerStartTileX].Tiles[NewBattlerStartTileY]->GetActorLocation();
 		NewBattler->SetActorLocation(NewBattlerSpawnLocation);
-		NewBattler->Team = Team; //TODO: change this to have a spawn argument. so that we can init team colours etc in ABattler
+		NewBattler->InitTeam(Team);
 		NewBattler->TileLocation = FIntVector2(NewBattlerStartTileX,NewBattlerStartTileY);
 
 
 		BattlerArray.Add(NewBattler);
-		//TODO: I don't really like these if statements here. Would be better to have and Array of Battler Arrays so I could iterate through as many different teams as is required.
-		if(Team == ETeam::Red) //TODO: I might just get rid of this.
-		{
-			RedBattlerArray.Add(NewBattler);
-		}
-		else if(Team == ETeam::Blue)
-		{
-			BlueBattlerArray.Add(NewBattler);
-		}
 	}
 }
 
@@ -163,19 +127,21 @@ void AHexGrid::StartBattle()
 void AHexGrid::TickBattle()
 {
 	//UE_LOG(LogTemp, Warning, TEXT("Turn # %d"), TurnNumber);
+	
+	//Increase the turn number
 	TurnNumber++;
+
+	// Iterate through all Battlers, Assigning whether the will attack or move next. 
 	for (ABattler* Battler : BattlerArray)
 	{
 		if(Battler->Alive && Battler->ActOnTurnNumber == 0)
 		{
-			int ClosestEnemyDistance = 100;
+			int ClosestEnemyDistance = 1000; // an arbitrarily large number
 			for(ABattler* EnemyBattler : BattlerArray)
 			{
-				if(Battler != EnemyBattler && Battler->Team != EnemyBattler->Team && EnemyBattler->Alive==true) // check the other battler isn't on the same team.
+				if(Battler != EnemyBattler && Battler->TeamName != EnemyBattler->TeamName && EnemyBattler->Alive==true) // check the other battler isn't on the same team.
 				{
-					Battler->TileLocation;
-					EnemyBattler->TileLocation;
-					int TilesBetweenBattlers = FMath::Abs((Battler->TileLocation.X - EnemyBattler->TileLocation.X))  + FMath::Abs((Battler->TileLocation.Y - EnemyBattler->TileLocation.Y));
+					int TilesBetweenBattlers = FMath::Abs((Battler->TileLocation.X - EnemyBattler->TileLocation.X))  + FMath::Abs((Battler->TileLocation.Y - EnemyBattler->TileLocation.Y)); // Finds distance between battlers.
 					if(TilesBetweenBattlers < ClosestEnemyDistance)
 					{
 						ClosestEnemyDistance = TilesBetweenBattlers;
@@ -184,20 +150,25 @@ void AHexGrid::TickBattle()
 				}
 			}
 
-			Battler->TurnMode = (ClosestEnemyDistance <= Battler->TileRange) ? ETurnMode::Attack :  ETurnMode::MoveToNextTile;
-			Battler->ActOnTurnNumber = TurnNumber + ((ClosestEnemyDistance <= Battler->TileRange) ? Battler->TurnsPerAttack : Battler->TurnsPerMove);
-		}
-		/*if(ClosestEnemyDistance <= Battler->TileRange)
-		{
-			Battler->TurnMode = ETurnMode::Attack;
-		}
-		else
-		{
-			Battler->TurnMode = ETurnMode::Move;
+			if(ClosestEnemyDistance <= Battler->TileRange) //Attack Next
+			{
+				Battler->TurnMode = ETurnMode::Attack;
+				Battler->ActOnTurnNumber = TurnNumber + Battler->TurnsPerAttack;
+				Battler->StartAction(Battler->NearestEnemyBattler->GetActorLocation(), BattleTickTimeStep * Battler->TurnsPerAttack);
+			}
+			else // Move Next
+			{
+				Battler->TurnMode = ETurnMode::MoveToNextTile;
+				Battler->ActOnTurnNumber = TurnNumber + Battler->TurnsPerMove;
+				FIntVector2 TileToMoveTo = SimplePathFind(Battler->TileLocation, Battler->NearestEnemyBattler->TileLocation);
+				FVector TargetLocation = HexGrid2DArray[TileToMoveTo.X].Tiles[TileToMoveTo.Y]->GetActorLocation();
+				Battler->StartAction(TargetLocation, BattleTickTimeStep * Battler->TurnsPerMove);
 
-		}*/
+			}
+		}
 	}
 
+	//Attack Loop
 	for (ABattler* Battler : BattlerArray)
 	{
 		if(Battler->Alive && Battler->TurnMode == ETurnMode::Attack && Battler->ActOnTurnNumber == TurnNumber) // Because of the order of battlers in the Array this favours one team essentially attacking first.
@@ -208,6 +179,7 @@ void AHexGrid::TickBattle()
 		}
 	}
 
+	//MoveLoop
 	for (ABattler* Battler : BattlerArray)
 	{
 		if(Battler->Alive && Battler->TurnMode == ETurnMode::MoveToNextTile && Battler->ActOnTurnNumber == TurnNumber)
@@ -221,41 +193,4 @@ void AHexGrid::TickBattle()
 			Battler->ActOnTurnNumber = 0;
 		}
 	}
-	
-	/*for (ABattler* RedBattler : RedBattlerArray)
-	{
-		int ClosestEnemyDistance = 100;
-		for(ABattler* EnemyBattler : BlueBattlerArray)
-		{
-			RedBattler->TileLocation;
-			EnemyBattler->TileLocation;
-			int TilesBetweenBattlers = FMath::Abs((RedBattler->TileLocation.X - EnemyBattler->TileLocation.X))  + FMath::Abs((RedBattler->TileLocation.Y - EnemyBattler->TileLocation.Y));
-			if(TilesBetweenBattlers < ClosestEnemyDistance)
-			{
-				ClosestEnemyDistance = TilesBetweenBattlers;
-				RedBattler->NearestEnemyBattler = EnemyBattler;
-			}
-		}
-	}
-
-	for (ABattler* BlueBattler : BlueBattlerArray)
-	{
-		int ClosestEnemyDistance = 100;
-		for(ABattler* EnemyBattler : RedBattlerArray)
-		{
-			BlueBattler->TileLocation;
-			EnemyBattler->TileLocation;
-			int TilesBetweenBattlers = FMath::Abs((BlueBattler->TileLocation.X - EnemyBattler->TileLocation.X))  + FMath::Abs((BlueBattler->TileLocation.Y - EnemyBattler->TileLocation.Y));
-			if(TilesBetweenBattlers < ClosestEnemyDistance) // TODO: Account for if there are more than one which are the same distance away and choose one? Although choosing the first one in the list helps the Deterministic-ness
-			{
-				ClosestEnemyDistance = TilesBetweenBattlers;
-				BlueBattler->NearestEnemyBattler = EnemyBattler;
-			}
-		}
-	}*/
-	// For each living Battler
-	// find closest enemy Battler
-	// If in range Battler->Shoot()
-	// Else path to enemy Battler and move one step in that direction.
-	
 }

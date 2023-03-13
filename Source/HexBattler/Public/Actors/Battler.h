@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "Battler.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDied);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDamaged);
 
 UENUM(BlueprintType)
 enum ETeam
@@ -14,7 +16,7 @@ enum ETeam
 	Blue      UMETA(DisplayName = "Blue"),
 };
 
-UENUM()
+UENUM(BlueprintType)
 enum ETurnMode
 {
 	MoveToNextTile     UMETA(DisplayName = "MoveToNextTile"), // tried to call it move but there was a conflict with an engine file..
@@ -32,10 +34,17 @@ public:
 	ABattler();
 
 	UFUNCTION(BlueprintNativeEvent)
+	void InitTeam(ETeam Team);
+	virtual void InitTeam_Implementation(ETeam Team);
+	
+	UFUNCTION()
 	void Die();
-	virtual void Die_Implementation();
+
 	
 	void Attack(int Seed, int TurnNumber, int BattlerNumber);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void StartAction(FVector TargetLocation, float DeltaTime);
 
 protected:
 	// Called when the game starts or when spawned
@@ -51,7 +60,7 @@ public:
 	UStaticMeshComponent* StaticMeshComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Unit Info")
-	TEnumAsByte<ETeam> Team;
+	TEnumAsByte<ETeam> TeamName;
 
 	UPROPERTY(EditDefaultsOnly, Category="Unit Info")
 	int TileRange = 5;
@@ -77,10 +86,16 @@ public:
 	UPROPERTY(VisibleAnywhere, Category="Unit Info")
 	ABattler* NearestEnemyBattler;
 
-	UPROPERTY(VisibleAnywhere, Category="Unit Info")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Unit Info")
 	TEnumAsByte<ETurnMode> TurnMode;
 
 	UPROPERTY()
 	bool Alive = true;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnDied OnDied;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnDamaged OnDamaged;
 	
 };

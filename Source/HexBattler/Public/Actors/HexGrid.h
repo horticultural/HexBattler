@@ -41,8 +41,6 @@ protected:
 
 	FIntVector2 SimplePathFind(FIntVector2 Origin, FIntVector2 Target);
 
-	void GetNeighbourTiles(int TileX, int TileY);
-
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -71,7 +69,7 @@ public:
 	UPROPERTY(EditAnywhere, Category="HexGridDetails")
 	int Seed = 1000;
 
-	UPROPERTY(EditAnywhere, Category="HexGridDetails")
+	UPROPERTY(VisibleAnywhere, Category="HexGridDetails")
 	int TurnNumber = 0;
 	
 	UPROPERTY(VisibleAnywhere, Category="HexGrid")
@@ -92,12 +90,6 @@ public:
 private:
 	
 	FTimerHandle BattleTimerHandle;
-
-	UPROPERTY()
-	TArray<ABattler*> RedBattlerArray;
-
-	UPROPERTY()
-	TArray<ABattler*> BlueBattlerArray;
 
 	UPROPERTY()
 	TArray<ABattler*> BattlerArray;

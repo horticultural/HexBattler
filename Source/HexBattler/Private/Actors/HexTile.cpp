@@ -30,6 +30,7 @@ void AHexTile::Tick(float DeltaTime)
 
 }
 
+//For debug and so I could ensure the grid was set out correctly in the visualisation.
 void AHexTile::SetText(FText Text)
 {
 	TextRenderComp->SetText(Text);
